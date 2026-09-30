@@ -1,0 +1,21 @@
+body {
+  max-width: 46rem;
+  margin: 2.5rem auto;
+  padding: 0 1.2rem 4rem;
+  color: #1c2833;
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  line-height: 1.55;
+  font-size: 1.05rem;
+}
+h1, h2, h3 {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.25;
+  font-weight: 650;
+}
+h1 { font-size: 1.7rem; margin-top: 0; }
+img { max-width: 100%; height: auto; display: block; margin: 0.8rem auto; }
+table { border-collapse: collapse; margin: 1rem 0 1.4rem; width: 100%; font-size: 0.95rem; }
+th, td { border-bottom: 1px solid #d5d8dc; padding: 0.35rem 0.5rem; text-align: left; vertical-align: top; }
+th { border-bottom-width: 2px; }
+code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
+blockquote { border-left: 3px solid #aab7b8; margin-left: 0; padding-left: 1rem; color: #34495e; }

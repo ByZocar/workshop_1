@@ -1,0 +1,284 @@
+---
+title: "Regularización con Penalización de Ridge y LASSO"
+lang: es
+---
+
+# Regularización con Penalización de Ridge y LASSO
+
+## Una bitácora de aprendizaje con un experimento en R
+
+[Nombre del integrante 1], [Nombre del integrante 2], [Nombre del integrante 3]
+
+Universidad Autónoma de Occidente
+
+Estadística y Probabilidad 2, Grupo 3, Ingeniería de Datos
+
+[Nombre del docente]
+
+10 de septiembre de 2026
+
+Los números, las tablas y las figuras de esta bitácora salen de `experimento/run_all.R`. La semilla es {{semilla}}. El ambiente de la corrida es R {{r_version}} y glmnet {{glmnet_version}}.
+
+## Regularización con penalización de Ridge y LASSO
+
+Este trabajo nació de una tarea de Estadística y Probabilidad 2 y, al mismo tiempo, de una confusión mía. Yo creía que ya entendía la regularización porque había oído los nombres Ridge y LASSO. Cuando me tocó explicarlos, me di cuenta de que solo manejaba eslóganes. Lo que sigue es el rastro de ese proceso: primero lo que yo creía, después la teoría que me faltaba, luego los errores que cometí en R y, al final, cómo esos números me obligaron a releer las fórmulas.
+
+## Lo que yo creía al inicio
+
+Llegué al tema con tres ideas incompletas. La primera era que regularizar sirve para no sobreajustar. La frase no es del todo falsa, pero no dice qué se le cobra al modelo, ni por qué el intercepto no se penaliza, ni qué cambia entre un círculo y un diamante.
+
+La segunda era que LASSO quita variables, como un filtro que se aplica antes de estimar. No lo veía como un problema de optimización con una restricción geométrica. Si dos regresores vienen muy correlacionados y los dos son señal, LASSO no los promedia: se queda con uno y apaga el otro. Yo llamaba a eso efecto de agrupamiento. El nombre, bien puesto, es al revés. El *grouping effect* de Zou y Hastie (2005) es la tendencia a tratar parecido a los predictores correlacionados. Lo tiene, en parte, Ridge, y Elastic Net se construye para recuperarlo. Lo que LASSO hizo en el laboratorio fue lo contrario: eligió un representante del grupo.
+
+La tercera era que λ = 1 es un valor razonable y que, si las columnas ya son numéricas, no hace falta estandarizar. Las dos se cayeron en el laboratorio. glmnet arma la escala de λ con los datos. Y LASSO, sin estandarizar, no penaliza importancia: penaliza el tamaño del coeficiente. Una variable medida en unidades grandes y otra medida en centésimas no juegan el mismo juego.
+
+También arrastré una hipótesis peligrosa: si ya conozco modelos, esto es el caso fácil. No lo era. Sabía el nombre. No había interiorizado la geometría ni lo que la colinealidad le hace a mínimos cuadrados ordinarios (MCO). Por eso fabriqué un ejemplo sintético donde yo conocía la verdad: cuatro señales, un señuelo colineal y ruido.
+
+## Marco teórico
+
+### El punto de partida: mínimos cuadrados ordinarios
+
+Tenemos n observaciones y p regresores. El modelo lineal se escribe
+
+yᵢ = β₀ + Σⱼ xᵢⱼ βⱼ + εᵢ, con i = 1, …, n.
+
+MCO elige los coeficientes que hacen lo más chica posible la suma de residuos al cuadrado (RSS, *residual sum of squares*):
+
+RSS(β) = || y − Xβ ||².
+
+Si X′X se puede invertir, la solución es única: β̂ = (X′X)⁻¹ X′y. Tres cosas rompen la tranquilidad de esa fórmula, y las tres aparecieron en el laboratorio.
+
+Primero, p grande frente a n. Si hay tantos o más regresores que filas, X′X deja de ser de rango completo y ya no hay un único β̂ que minimice el RSS. En el segundo escenario, n de entrenamiento fue {{pn_n_train}}, p fue {{pn_p}} y el rango de la matriz aumentada (1 | X) fue {{pn_rango}}. Hay {{pn_n_param}} parámetros. `lm` dejó {{pn_indefinidos}} coeficientes sin definir por singularidades y, al predecir, avisó: `{{pn_mensaje_lm}}`.
+
+Segundo, multicolinealidad. Si dos columnas de X apuntan casi en la misma dirección, X′X está mal condicionada. Los coeficientes se hinchan y la frase «el efecto de xⱼ» se vuelve difícil de sostener. En el entrenamiento del primer escenario, el factor de inflación de varianza (VIF) de x01 contra el resto salió {{vif}}. La correlación empírica entre x01 y x02 fue {{cor12}}, y entre x01 y x03 fue {{cor13}}. El número de condición de X′X, con X centrada, fue {{kappa}}. La matriz se puede invertir. Está mal condicionada.
+
+Tercero, sobreajuste. El RSS de entrenamiento siempre se puede bajar metiendo más columnas. El error que importa es el de fuera de muestra. En el segundo escenario eso se ve crudo: `lm` deja el RSS de entrenamiento en cero, porque interpola las 32 filas, y aun así el RMSE de prueba no es cero.
+
+La regularización no inventa otro modelo. Cambia la función objetivo: al RSS le suma un precio por el tamaño de β. El intercepto β₀ no se penaliza. No es complejidad. Es el nivel de y. En el LASSO de λmín el intercepto estimado fue {{intercepto_lasso}}, y no entra en el conteo de coeficientes vivos.
+
+### Sesgo, varianza y por qué aceptar un poco de sesgo
+
+La descomposición clásica del error de predicción, en esperanza, es sesgo al cuadrado más varianza más la varianza irreducible del ruido. Cuando el modelo lineal es el verdadero y n alcanza, MCO es insesgado y de varianza mínima entre los lineales insesgados (teorema de Gauss-Markov). Por eso no es un fracaso que, en el escenario n > p, MCO haya ganado en error cuadrático medio de predicción en prueba (RMSE = {{rmse_mco}}, frente a {{rmse_ridge}} de Ridge y {{rmse_lasso}} de LASSO). El proceso generador era lineal y n de entrenamiento = {{n_train}} para p = {{p}} no era ridículo.
+
+Eso me costó aceptarlo. Yo quería que MCO se desmoronara para que el relato quedara limpio. No se desmoronó en predicción. En el bloque colineal los coeficientes sí se movieron, y el método se quedó sin solución única cuando p > n. Regularizar es un intercambio explícito: se acepta sesgo (los β̂ se encogen) para bajar varianza, o para volver a plantear un problema que MCO ya no puede formular.
+
+### Ridge: penalización L2
+
+Ridge (Hoerl y Kennard, 1970) resuelve minimizar el RSS más λ veces la suma de los coeficientes al cuadrado, con λ ≥ 0. Con X centrada y β₀ fuera de la penalización, la solución cerrada es
+
+β̂_Ridge = (X′X + λ I)⁻¹ X′y.
+
+El término λI rellena la diagonal. Aunque X′X sea singular o esté mal condicionada, X′X + λI es invertible si λ > 0. En el escenario p > n, el menor autovalor de X′X centrada fue {{pn_min_eigen}}. Después de sumar I, el menor autovalor pasó a {{pn_min_eigen_pen}}. Ridge no es un truco de otro curso. Es una corrección de la matriz que MCO necesita invertir.
+
+Hay dos escalas de λ y no se deben mezclar. En la fórmula cerrada, λ multiplica la identidad. En glmnet, para la familia gaussiana, el criterio es
+
+(1 / (2n)) || y − β₀ − Xβ ||² + λ [ (1 − α)/2 ||β||² + α ||β||₁ ],
+
+con las columnas estandarizadas durante el ajuste y los coeficientes devueltos en la escala original. Los λ de las tablas de validación cruzada son los de glmnet. La tabla de la fórmula cerrada, más abajo, usa el λ del capítulo. El script comprueba que ese λ = 0 reproduce a MCO y que un λ enorme manda las pendientes a cero.
+
+Si λ = 0, Ridge coincide con MCO. Si λ se va a infinito, β̂ se va a cero. Nadie llega exactamente a cero, salvo un caso degenerado, porque el círculo de la restricción L2 no tiene esquinas sobre los ejes. En un bloque correlacionado, Ridge tiende a repartir el efecto entre las columnas.
+
+### LASSO: penalización L1
+
+LASSO (Tibshirani, 1996) cambia el cuadrado por el valor absoluto: se minimiza el RSS más λ veces la suma de |βⱼ|. Ya no hay una fórmula tan limpia como la de Ridge. El algoritmo, descenso por coordenadas en glmnet, importa menos que la geometría. La bola L1 es un diamante. Las elipses de nivel del RSS, al crecer, tocan el diamante en una esquina con alta probabilidad. En esa esquina algunas coordenadas son exactamente cero.
+
+Por eso LASSO selecciona. Y por eso puede ser injusto con un grupo: si x01 y x02 están muy correlacionadas y las dos son señal, el diamante suele quedarse con una. En el laboratorio, x02 verdadera era −2 y LASSO en λmín la mandó a {{b_lasso_x02}}, conservando x01 = {{b_lasso_x01}}. Elastic Net mezcla L1 y L2 precisamente para no tener que coronar a una sola. No era el ajuste principal de esta bitácora. Es la puerta de salida si las dos gemelas importan.
+
+### Geometría: círculo y diamante
+
+La forma restringida, equivalente para algún t que depende de λ, es esta. Ridge: minimizar el RSS sujeto a que la suma de βⱼ al cuadrado no pase de t, un disco. LASSO: minimizar el RSS sujeto a que la suma de |βⱼ| no pase de t, un diamante. La misma idea, no dejar que β se vaya lejos, con distinta esquina. Esa distinción es la que después se tiene que ver en los caminos de coeficientes.
+
+![Figura 1. Restricción de Ridge (círculo) y de LASSO (diamante)](../experimento/salida/figuras/figura_01_geometria.png)
+
+*Figura 1. La elipse punteada es un mismo nivel de RSS. El círculo L2 se toca fuera de los ejes, así que ambos coeficientes siguen vivos. El diamante L1 se toca en una esquina: una coordenada queda en cero. El esquema no usa datos del laboratorio.*
+
+### El control λ y la validación cruzada
+
+λ es el precio. glmnet construye una trayectoria: muchos λ, de muy grandes (modelo nulo) a muy chicos (casi MCO). La validación cruzada estima, para cada λ, el error de predicción. Hay dos reglas habituales. λmín es el valle, el menor error de validación. λ1EE, la regla de un error estándar, es el λ más grande cuyo error de validación no supera el mínimo más un error estándar. En el laboratorio, LASSO con λmín dejó {{nnz_lasso}} variables vivas. Con λ1EE dejó {{nnz_1se}}.
+
+Elegir λ = 1 porque es uno no es un método. En estos datos, λ = 1 ya era un martillo: {{nnz_lam1}} coeficientes distintos de cero ({{soporte_lam1_txt}}), con x01 en {{b_lam1_x01}}, x05 en {{b_lam1_x05}} y x08 en {{b_lam1_x08}}. x02 ya estaba muerta. El λmín de LASSO salió {{lam_lasso}}, no 1.
+
+### Estandarizar no es cosmética
+
+Ridge y LASSO no son invariantes a la escala. Si xⱼ se mide en miles y xₖ en centésimas, el coeficiente de xⱼ es pequeño y el de xₖ es grande. La penalización se vuelve una penalización de unidades. glmnet estandariza por defecto: centra, pone cada columna en varianza 1, ajusta y devuelve los coeficientes en la escala original. El intercepto no entra a la penalización.
+
+## Bitácora de laboratorio
+
+El script reproducible está en `experimento/`. Lo que sigue es lo que me planteé, lo que hice mal y lo que entendí después.
+
+### Hipótesis que llevé al teclado
+
+Llevé cuatro hipótesis. Una: MCO iba a explotar en RMSE en cuanto hubiera colinealidad. Dos: λ = 1 era un LASSO suave. Tres: si las columnas eran numéricas, no estandarizar no debería importar. Cuatro: LASSO iba a recuperar las cuatro señales y apagar el resto, como un oráculo. Las cuatro estaban mal, en grados distintos.
+
+### El diseño
+
+No usé un archivo descargado de internet como pieza central. Si no conozco β, no puedo decir que LASSO se equivocó al apagar x02. El proceso generador es este. z, eⱼ, uⱼ y ε son normales estándar independientes.
+
+- x01 = z + {{sd_idio}} e₁
+- x02 = z + {{sd_idio}} e₂
+- x03 = z + {{sd_idio}} e₃
+- x04, …, salvo las señales que faltan, son ruido N(0, 1)
+- y = 3 x01 − 2 x02 + 4 x05 + 1.5 x08 + {{sigma}} ε
+
+Con esa desviación idiosincrática, la correlación poblacional entre dos miembros del bloque es 1 / (1 + {{sd_idio}}²) = {{cor_pob}}. La semilla {{semilla}} fija las extracciones. El reparto entrenamiento/prueba es un `sample.int` inmediato, y los cinco pliegues salen del mismo flujo, compartidos por Ridge y LASSO.
+
+Tabla 1
+
+*Decisiones del experimento sintético*
+
+{{tabla_diseno}}
+
+*Nota.* Cada escenario vuelve a llamar `set.seed({{semilla}})`. No comparten la corriente de aleatorios: son dos diseños.
+
+Si Ridge y LASSO son lo que la teoría dice, deberían encoger el bloque, apagar ruido, dudar con x03 y pelearse por x01 frente a x02. Esa era la pregunta del ejemplo.
+
+### Fallo 1: λ = 1 a ciegas
+
+Pedí LASSO con λ = 1 porque 1 sonaba razonable. Esperaba un modelo casi MCO con un recorte. Obtuve {{nnz_lam1}} coeficientes distintos de cero: {{soporte_lam1_txt}}, con valores x01 = {{b_lam1_x01}}, x05 = {{b_lam1_x05}} y x08 = {{b_lam1_x08}}. x02 ya estaba muerta. El λmín de LASSO salió {{lam_lasso}}. Uno no es una unidad universal. La trayectoria de λ se calibra al problema.
+
+### Fallo 2: yo quería que MCO perdiera, y no perdió
+
+El RMSE de prueba de MCO fue {{rmse_mco}}; el de Ridge, {{rmse_ridge}}; el de LASSO, {{rmse_lasso}}. MCO ganó. El VIF sí gritaba ({{vif}}). Los coeficientes de MCO, contra la verdad, conservaron el signo: x01 = {{b_mco_x01}} (verdadero 3), x02 = {{b_mco_x02}} (verdadero −2), x05 = {{b_mco_x05}} (verdadero 4), x08 = {{b_mco_x08}} (verdadero 1.5), x03 = {{b_mco_x03}} (verdadero 0). x05 y x08, que no viven en el bloque, quedaron cerca. El bloque colineal se movió, y x03, que debía ser cero, no salió cero. Mi narrativa de «MCO es inútil» no era Gauss-Markov. Cuando el modelo lineal es el verdadero y n alcanza, MCO es difícil de ganar en predicción. El valor del tema, en este escenario, no fue el RMSE: fue qué historia cuenta cada β̂.
+
+### Hallazgo: LASSO apaga una señal por ser gemela
+
+LASSO con λmín dejó {{nnz_lasso}} vivos: {{soporte_lasso_txt}}. Entre las señales, x01 = {{b_lasso_x01}}, x05 = {{b_lasso_x05}}, x08 = {{b_lasso_x08}}, y x02 = {{b_lasso_x02}}. Los falsos positivos, variables con β verdadero 0 que quedaron vivas, fueron {{falsos_txt}}. El mayor de esos |β| fue {{falso_max}}, por debajo de x05 y de x08.
+
+La regla de un error estándar dejó {{nnz_1se}}: {{soporte_1se_txt}}. Apagó los falsos positivos. No resucitó a x02. λ1EE fue {{lam_1se}}, mayor que λmín.
+
+Ridge no apagó a x02: la encogió a {{b_ridge_x02}} y le pasó parte a x03 = {{b_ridge_x03}}, que debía ser cero. x01 quedó en {{b_ridge_x01}}, lejos del 3 verdadero y del {{b_mco_x01}} de MCO. Ridge reparte. No selecciona. En λmín, Ridge tiene los {{p}} coeficientes distintos de cero. LASSO tiene {{n_ceros_lasso}} ceros exactos de {{p}}.
+
+### Fallo 3: no estandarizar
+
+Multipliqué x05 por 1 000 y dividí x08 por 100, en el conjunto de entrenamiento. Misma información, otras unidades. Volví a elegir λmín con los mismos cinco pliegues.
+
+Sin estandarizar, λmín saltó a {{esc_lam_raw}} y quedó un solo coeficiente vivo: x05 = {{esc_x05_raw}}. x08 = {{esc_x08_raw}}. Con estandarizar, λmín fue {{esc_lam_std}}, casi el del problema original, con {{esc_nnz_std}} coeficientes vivos. x08 vuelve con β̂ = {{esc_x08_std}}, porque la escala se invierte al devolver el coeficiente a las unidades medidas: es el β̂ original de x08 multiplicado por 100. x05 queda en {{esc_x05_std}}, el β̂ original dividido por 1 000.
+
+La frase que me voy a llevar es esta: LASSO pregunta cuánto cuesta, en valor absoluto del coeficiente, explicar y. Si la columna es enorme, βⱼ es barato y pasa. Si la columna es minúscula, βⱼ es carísimo y el diamante lo manda a la esquina. Estandarizar es parte del método. Sin ese paso, el λ de glmnet también cambia de escala: aquí pasó de {{esc_lam_std}} a {{esc_lam_raw}}.
+
+### Cuando MCO deja de existir como solución única
+
+En el segundo escenario repetí el mismo proceso generador con más columnas de ruido: n = {{pn_n}}, p = {{pn_p}}, entrenamiento = {{pn_n_train}}, prueba = {{pn_n_test}}, otra vez con la semilla {{semilla}}. El rango de (1 | X) fue {{pn_rango}}. {{parrafo_lm}}
+
+Ridge, con λmín = {{pn_lam_ridge}}, tuvo RMSE {{pn_rmse_ridge}}. Un λ grande con muchas columnas puede quedarse corto: aquí no mejoró a la seudoinversa. LASSO, con λmín = {{pn_lam_lasso}}, tuvo RMSE {{pn_rmse_lasso}} y {{pn_nnz_lasso}} coeficientes vivos ({{pn_soporte_txt}}). Otra vez apagó a x02 ({{pn_b_x02}}) y conservó x01 = {{pn_b_x01}}, x05 = {{pn_b_x05}} y x08 = {{pn_b_x08}}. Cuando p > n, la pregunta ya no es si MCO o Ridge. La pregunta es cómo se plantea un problema que MCO no formula con una sola solución.
+
+## Resultados del ejemplo
+
+![Figura 2. Esquema del bloque colineal en el entrenamiento](../experimento/salida/figuras/figura_02_bloque.png)
+
+*Figura 2. x01, x02 y x03 heredan la misma latente. Las dos primeras son señal. x03 es la trampa. El resto de columnas es ruido, salvo x05 y x08. La correlación y el VIF son los del conjunto de entrenamiento.*
+
+![Figura 3. Coeficientes verdaderos frente a MCO, Ridge y LASSO](../experimento/salida/figuras/figura_03_coeficientes.png)
+
+*Figura 3. MCO conserva el signo de las señales y mueve el bloque. Ridge encoge el bloque y le pasa parte a x03. LASSO apaga x02, que era señal, y se queda con x01.*
+
+Tabla 2
+
+*Coeficientes verdaderos y estimados en las variables de interés*
+
+{{tabla_coef}}
+
+*Nota.* Ridge y LASSO usan λmín de validación cruzada de cinco pliegues. Las otras 15 variables tienen coeficiente verdadero 0. En esas 15, el mayor |β| de MCO fue {{max_resto_mco}}, el de Ridge {{max_resto_ridge}} y el de LASSO {{max_resto_lasso}}. LASSO dejó {{n_ceros_resto}} de esas 15 en cero exacto.
+
+![Figura 4. Camino de coeficientes de Ridge](../experimento/salida/figuras/figura_04_camino_ridge.png)
+
+*Figura 4. Camino de Ridge contra log(λ). Las líneas de color son x01, x02, x03, x05 y x08. El resto va en gris. La vertical marca λmín = {{lam_ridge}}.*
+
+![Figura 5. Camino de coeficientes de LASSO](../experimento/salida/figuras/figura_05_camino_lasso.png)
+
+*Figura 5. Camino de LASSO contra log(λ). x02 llega a cero exacto. La vertical marca λmín = {{lam_lasso}}.*
+
+![Figura 6. Error de validación cruzada](../experimento/salida/figuras/figura_06_validacion.png)
+
+*Figura 6. ECM de validación cruzada. Las bandas son un error estándar. Las verticales marcan λmín de cada método y λ = 1. El valle no coincide con 1.*
+
+Tabla 3
+
+*Error de predicción en el conjunto de prueba (n > p)*
+
+{{tabla_rmse}}
+
+*Nota.* MCO ganó predicción. El proceso generador era lineal y n todavía alcanzaba. El λ de la tabla es el de glmnet.
+
+![Figura 7. RMSE de prueba cuando n supera a p](../experimento/salida/figuras/figura_07_rmse_np.png)
+
+*Figura 7. MCO = {{rmse_mco}}, Ridge = {{rmse_ridge}}, LASSO = {{rmse_lasso}}. Regularizar no mejoró la predicción. Sí cambió la historia de cada coeficiente.*
+
+![Figura 8. LASSO sin estandarizar y LASSO estandarizado](../experimento/salida/figuras/figura_08_escalas.png)
+
+*Figura 8. x05 ampliada por 1 000 y x08 reducida por 100. Sin estandarizar solo sobrevive x05 (β̂ = {{esc_x05_raw}}). Con estandarizar, x08 reaparece (β̂ = {{esc_x08_std}}) porque en la escala medida necesita un coeficiente enorme. Cada panel tiene su propio eje.*
+
+Tabla 4
+
+*El mismo LASSO, con y sin estandarizar, después del cambio de unidades*
+
+{{tabla_escalas}}
+
+![Figura 9. RMSE de prueba cuando p supera a n](../experimento/salida/figuras/figura_09_rmse_pn.png)
+
+*Figura 9. Entrenamiento = {{pn_n_train}}, p = {{pn_p}}, rango = {{pn_rango}}. Seudoinversa = {{pn_rmse_mco}}, lm = {{pn_rmse_lm}}, Ridge = {{pn_rmse_ridge}}, LASSO = {{pn_rmse_lasso}}.*
+
+Tabla 5
+
+*Error de predicción cuando p > n*
+
+{{tabla_pn}}
+
+## Análisis: la teoría en estos números
+
+RSS y penalización. MCO minimiza solo el RSS de entrenamiento: {{rss_mco}}. Ridge lo deja en {{rss_ridge}} y LASSO en {{rss_lasso}}. A cambio, la norma L2 de las pendientes pasa de {{l2_mco}} a {{l2_ridge}}, y la norma L1 de {{l1_mco}} a {{l1_lasso}}. En n > p ese canje no mejoró el RMSE de prueba. En p > n el canje de LASSO sí: {{pn_rmse_lasso}} contra {{pn_rmse_mco}} de la seudoinversa.
+
+Sesgo y varianza. Ridge sesgó x01 desde el verdadero 3, y desde el {{b_mco_x01}} de MCO, hacia {{b_ridge_x01}}. Ese sesgo es el precio de no invertirle a X′X toda la confianza. En n > p el precio fue innecesario para predecir. En colinealidad, el precio compra otra lectura: nadie se lleva toda la culpa del bloque.
+
+Geometría L2 frente a L1. Ceros exactos en Ridge, en λmín: ninguno. Ceros exactos en LASSO con λmín: {{n_ceros_lasso}} de {{p}}. Eso es el diamante tocando el eje.
+
+Un representante, no el soporte entero. x01 y x02 eran las dos señal y r = {{cor12}}. LASSO conservó una. La frase que sí puedo defender es: LASSO recupera un representante del grupo. {{parrafo_sensibilidad}}
+
+Tabla 6
+
+*La misma semilla, tres desviaciones idiosincráticas*
+
+{{tabla_sensibilidad}}
+
+λ y validación cruzada. λ = 1 no coincidió con el valle. λ1EE produjo un modelo más corto ({{nnz_1se}} vivos) que λmín ({{nnz_lasso}} vivos). Elegir λ es parte del estimador.
+
+Estandarización. El experimento de las escalas convierte la penalización en una penalización de unidades. Con estandarizar, el ajuste es el mismo LASSO de la Tabla 2 escrito en las unidades nuevas. Sin estandarizar, la trayectoria de λ se recalibra y x08 desaparece.
+
+Cuando MCO no existe como solución única. Rango {{pn_rango}} frente a {{pn_n_param}} parámetros. Ahí regularizar no es mejorar a MCO: es definir el problema. La fórmula cerrada lo dice en una cuenta. El menor autovalor, {{pn_min_eigen}}, pasa a {{pn_min_eigen_pen}} al sumar I.
+
+Tabla 7
+
+*Fórmula cerrada de Ridge en el entrenamiento de n > p, con X centrada*
+
+{{tabla_ridge_cerrado}}
+
+*Nota.* Este λ no es el de glmnet. λ = 0 reproduce a MCO. Al crecer λ, el bloque se encoge y x05 y x08, que casi no comparten dirección con nadie, resisten más.
+
+## Conclusiones
+
+Ridge y LASSO le ponen precio a la norma de β, con L2 o con L1, y ese precio cambia existencia, varianza e interpretación. Ridge encoge y comparte el bloque colineal. No selecciona. LASSO selecciona y, por el diamante, puede apagar una señal que tenía una gemela. λ se elige con validación cruzada: λmín y λ1EE contaron historias distintas ({{nnz_lasso}} frente a {{nnz_1se}} vivos). Estandarizar es parte del método. El fallo de las escalas fue el experimento que más me corrigió. Cuando n alcanza y el proceso es lineal, MCO puede ganar RMSE y aun así contar peor el bloque colineal. Cuando p supera a n, MCO ya no tiene una solución única: `lm` interpola el entrenamiento y deja coeficientes sin definir.
+
+Lo que me queda, más que una lista de fórmulas, es una forma de leer un ajuste: preguntar qué se minimizó, qué se penalizó, en qué unidades, en qué escala de λ, y si la solución de MCO existía.
+
+## Cómo reproducir
+
+Desde la raíz del repositorio:
+
+```bash
+Rscript experimento/run_all.R
+```
+
+Hacen falta R {{r_version}}, glmnet {{glmnet_version}} y ggplot2 {{ggplot2_version}}. El script vuelve a escribir las figuras, las tablas, `informe/bitacora.md` y `informe/bitacora.html`. `experimento/R/verificar.R` corta la corrida si alguna afirmación del relato deja de cumplirse.
+
+## Referencias
+
+Friedman, J., Hastie, T. y Tibshirani, R. (2010). Regularization paths for generalized linear models via coordinate descent. *Journal of Statistical Software, 33*(1), 1-22. https://doi.org/10.18637/jss.v033.i01
+
+Hastie, T., Tibshirani, R. y Friedman, J. (2009). *The elements of statistical learning: Data mining, inference, and prediction* (2.ª ed.). Springer. https://doi.org/10.1007/978-0-387-84858-7
+
+Hoerl, A. E. y Kennard, R. W. (1970). Ridge regression: Biased estimation for nonorthogonal problems. *Technometrics, 12*(1), 55-67. https://doi.org/10.1080/00401706.1970.10488634
+
+James, G., Witten, D., Hastie, T. y Tibshirani, R. (2021). *An introduction to statistical learning: With applications in R* (2.ª ed.). Springer. https://doi.org/10.1007/978-1-0716-1418-1
+
+Tibshirani, R. (1996). Regression shrinkage and selection via the lasso. *Journal of the Royal Statistical Society: Series B (Methodological), 58*(1), 267-288. https://doi.org/10.1111/j.2517-6161.1996.tb02080.x
+
+Zou, H. y Hastie, T. (2005). Regularization and variable selection via the elastic net. *Journal of the Royal Statistical Society: Series B (Statistical Methodology), 67*(2), 301-320. https://doi.org/10.1111/j.1467-9868.2005.00503.x

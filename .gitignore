@@ -1,19 +1,6 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
-.env
-
-# Jupyter Notebooks
-.ipynb_checkpoints/
-
-# Data Files (Crucial: Never commit raw or processed data in a real repo)
-data/raw/candidates.csv
-!data/raw/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
-
-# OS generated files
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+*.Rproj
 .DS_Store
-Thumbs.db
