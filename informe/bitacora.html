@@ -85,7 +85,13 @@ code span.va { color: #19177c; }
 code span.vs { color: #4070a0; } 
 code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
 </style>
-  <style type="text/css">body {
+  <style type="text/css">@page {
+size: letter;
+margin: 1.7cm 1.6cm 1.8cm 1.6cm;
+}
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+header#title-block-header { display: none; }
+body {
 max-width: 46rem;
 margin: 2.5rem auto;
 padding: 0 1.2rem 4rem;
@@ -94,6 +100,13 @@ font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
 line-height: 1.55;
 font-size: 1.05rem;
 }
+.portada {
+text-align: center;
+margin: 12vh 0 8vh;
+}
+.portada h1 { font-size: 1.85rem; margin-bottom: 0.4rem; }
+.portada h2 { font-size: 1.15rem; font-weight: 500; color: #34495e; margin-top: 0; }
+.portada p { margin: 0.35rem 0; }
 h1, h2, h3 {
 font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 line-height: 1.25;
@@ -106,25 +119,44 @@ th, td { border-bottom: 1px solid #d5d8dc; padding: 0.35rem 0.5rem; text-align: 
 th { border-bottom-width: 2px; }
 code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
 blockquote { border-left: 3px solid #aab7b8; margin-left: 0; padding-left: 1rem; color: #34495e; }
+@media print {
+body { max-width: none; margin: 0; padding: 0; font-size: 11pt; line-height: 1.45; }
+.portada {
+page-break-after: always;
+margin: 0;
+min-height: 24cm;
+display: flex;
+flex-direction: column;
+justify-content: center;
+}
+h1, h2, h3, h4 { page-break-after: avoid; }
+img, table, pre, blockquote { page-break-inside: avoid; }
+a { color: #1a365d; text-decoration: none; }
+}
 </style>
 </head>
 <body>
 <header id="title-block-header">
 <h1 class="title">Regularización con Penalización de Ridge y LASSO</h1>
 </header>
-<h1 id="regularización-con-penalización-de-ridge-y-lasso">Regularización
-con Penalización de Ridge y LASSO</h1>
+<section id="regularización-con-penalización-de-ridge-y-lasso" class="portada">
+<h1>Regularización con Penalización de Ridge y LASSO</h1>
 <h2 id="una-bitácora-de-aprendizaje-con-un-experimento-en-r">Una
 bitácora de aprendizaje con un experimento en R</h2>
-<p>[Nombre del integrante 1], [Nombre del integrante 2], [Nombre del
-integrante 3]</p>
+<p>Andrés Felipe Cardozo Gómez</p>
 <p>Universidad Autónoma de Occidente</p>
 <p>Estadística y Probabilidad 2, Grupo 3, Ingeniería de Datos</p>
-<p>[Nombre del docente]</p>
+<p>Ernesto Peláez García</p>
 <p>10 de septiembre de 2026</p>
-<p>Los números, las tablas y las figuras de esta bitácora salen de
-<code>experimento/run_all.R</code>. La semilla es 20260908. El ambiente
-de la corrida es R 4.6.1 y glmnet 5.0.</p>
+</section>
+<h2 id="recursos">Recursos</h2>
+<ol type="1">
+<li>Repositorio del experimento, con el código, las figuras y los datos
+de esta bitácora: <a href="https://github.com/ByZocar/workshop_1" class="uri">https://github.com/ByZocar/workshop_1</a></li>
+</ol>
+<p>Los números de las tablas y de las figuras salen de ese repositorio,
+en <code>experimento/run_all.R</code>. La semilla es 20260908. El
+ambiente de la corrida es R 4.6.1 y glmnet 5.0.</p>
 <h2 id="regularización-con-penalización-de-ridge-y-lasso-1">Regularización
 con penalización de Ridge y LASSO</h2>
 <p>Este trabajo nació de una tarea de Estadística y Probabilidad 2 y, al
@@ -799,11 +831,15 @@ en qué escala de λ, y si la solución de MCO existía.</p>
 <p>Desde la raíz del repositorio:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> experimento/run_all.R</span></code></pre></div>
 <p>Hacen falta R 4.6.1, glmnet 5.0 y ggplot2 4.0.3. El script vuelve a
-escribir las figuras, las tablas, <code>informe/bitacora.md</code> y
-<code>informe/bitacora.html</code>.
+escribir las figuras, las tablas, <code>informe/bitacora.md</code>,
+<code>informe/bitacora.html</code> y
+<code>informe/Informe_Ridge_LASSO.pdf</code>.
 <code>experimento/R/verificar.R</code> corta la corrida si alguna
 afirmación del relato deja de cumplirse.</p>
 <h2 id="referencias">Referencias</h2>
+<p>Cardozo Gómez, A. F. (2026). <em>Regularización con penalización de
+Ridge y LASSO: código, figuras y bitácora</em> [Repositorio].
+https://github.com/ByZocar/workshop_1</p>
 <p>Friedman, J., Hastie, T. y Tibshirani, R. (2010). Regularization
 paths for generalized linear models via coordinate descent. <em>Journal
 of Statistical Software, 33</em>(1), 1-22.

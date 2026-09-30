@@ -3,21 +3,29 @@ title: "Regularización con Penalización de Ridge y LASSO"
 lang: es
 ---
 
+::: {.portada}
+
 # Regularización con Penalización de Ridge y LASSO
 
 ## Una bitácora de aprendizaje con un experimento en R
 
-[Nombre del integrante 1], [Nombre del integrante 2], [Nombre del integrante 3]
+Andrés Felipe Cardozo Gómez
 
 Universidad Autónoma de Occidente
 
 Estadística y Probabilidad 2, Grupo 3, Ingeniería de Datos
 
-[Nombre del docente]
+Ernesto Peláez García
 
 10 de septiembre de 2026
 
-Los números, las tablas y las figuras de esta bitácora salen de `experimento/run_all.R`. La semilla es 20260908. El ambiente de la corrida es R 4.6.1 y glmnet 5.0.
+:::
+
+## Recursos
+
+1. Repositorio del experimento, con el código, las figuras y los datos de esta bitácora: <https://github.com/ByZocar/workshop_1>
+
+Los números de las tablas y de las figuras salen de ese repositorio, en `experimento/run_all.R`. La semilla es 20260908. El ambiente de la corrida es R 4.6.1 y glmnet 5.0.
 
 ## Regularización con penalización de Ridge y LASSO
 
@@ -302,9 +310,11 @@ Desde la raíz del repositorio:
 Rscript experimento/run_all.R
 ```
 
-Hacen falta R 4.6.1, glmnet 5.0 y ggplot2 4.0.3. El script vuelve a escribir las figuras, las tablas, `informe/bitacora.md` y `informe/bitacora.html`. `experimento/R/verificar.R` corta la corrida si alguna afirmación del relato deja de cumplirse.
+Hacen falta R 4.6.1, glmnet 5.0 y ggplot2 4.0.3. El script vuelve a escribir las figuras, las tablas, `informe/bitacora.md`, `informe/bitacora.html` y `informe/Informe_Ridge_LASSO.pdf`. `experimento/R/verificar.R` corta la corrida si alguna afirmación del relato deja de cumplirse.
 
 ## Referencias
+
+Cardozo Gómez, A. F. (2026). *Regularización con penalización de Ridge y LASSO: código, figuras y bitácora* [Repositorio]. https://github.com/ByZocar/workshop_1
 
 Friedman, J., Hastie, T. y Tibshirani, R. (2010). Regularization paths for generalized linear models via coordinate descent. *Journal of Statistical Software, 33*(1), 1-22. https://doi.org/10.18637/jss.v033.i01
 

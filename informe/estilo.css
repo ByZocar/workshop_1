@@ -1,3 +1,9 @@
+@page {
+  size: letter;
+  margin: 1.7cm 1.6cm 1.8cm 1.6cm;
+}
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+header#title-block-header { display: none; }
 body {
   max-width: 46rem;
   margin: 2.5rem auto;
@@ -7,6 +13,13 @@ body {
   line-height: 1.55;
   font-size: 1.05rem;
 }
+.portada {
+  text-align: center;
+  margin: 12vh 0 8vh;
+}
+.portada h1 { font-size: 1.85rem; margin-bottom: 0.4rem; }
+.portada h2 { font-size: 1.15rem; font-weight: 500; color: #34495e; margin-top: 0; }
+.portada p { margin: 0.35rem 0; }
 h1, h2, h3 {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   line-height: 1.25;
@@ -19,3 +32,17 @@ th, td { border-bottom: 1px solid #d5d8dc; padding: 0.35rem 0.5rem; text-align: 
 th { border-bottom-width: 2px; }
 code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
 blockquote { border-left: 3px solid #aab7b8; margin-left: 0; padding-left: 1rem; color: #34495e; }
+@media print {
+  body { max-width: none; margin: 0; padding: 0; font-size: 11pt; line-height: 1.45; }
+  .portada {
+    page-break-after: always;
+    margin: 0;
+    min-height: 24cm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  h1, h2, h3, h4 { page-break-after: avoid; }
+  img, table, pre, blockquote { page-break-inside: avoid; }
+  a { color: #1a365d; text-decoration: none; }
+}

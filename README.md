@@ -28,7 +28,7 @@ El comando regenera:
 - `experimento/salida/resultados.rds`
 - `informe/bitacora.md` y `informe/bitacora.html`
 
-La bitácora para leer es [`informe/bitacora.md`](informe/bitacora.md).
+El informe para entregar es [`informe/Informe_Ridge_LASSO.pdf`](informe/Informe_Ridge_LASSO.pdf). La misma bitácora está en [`informe/bitacora.md`](informe/bitacora.md).
 
 ## Estructura
 

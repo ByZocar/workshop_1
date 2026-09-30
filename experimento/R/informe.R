@@ -259,5 +259,37 @@ escribir_informe <- function(res, raiz) {
   )
   setwd(anterior)
   if (!identical(status, 0L)) stop("pandoc no pudo escribir el HTML")
+  exportar_pdf(raiz)
   invisible(salida_md)
+}
+
+exportar_pdf <- function(raiz) {
+  html <- normalizePath(file.path(raiz, "informe", "bitacora.html"))
+  pdf <- file.path(raiz, "informe", "Informe_Ridge_LASSO.pdf")
+  chrome <- Sys.which("google-chrome")
+  if (!nzchar(chrome)) chrome <- Sys.which("google-chrome-stable")
+  if (!nzchar(chrome)) stop("No está google-chrome; no pude escribir el PDF")
+  perfil <- tempfile("chrome-pdf-")
+  dir.create(perfil)
+  # Chrome a veces escribe el PDF y no termina. timeout lo cierra.
+  status <- system2(
+    "timeout",
+    c(
+      "--signal=KILL", "25",
+      chrome,
+      "--headless", "--disable-gpu", "--no-sandbox",
+      "--disable-dev-shm-usage", "--disable-extensions",
+      "--no-pdf-header-footer",
+      paste0("--user-data-dir=", perfil),
+      paste0("--print-to-pdf=", pdf),
+      paste0("file://", html)
+    )
+  )
+  if (!file.exists(pdf) || file.info(pdf)$size < 50000) {
+    stop("Chrome no pudo escribir el PDF")
+  }
+  if (!status %in% c(0L, 124L, 137L)) {
+    warning("Chrome terminó con código ", status, "; el PDF sí quedó escrito")
+  }
+  invisible(pdf)
 }
